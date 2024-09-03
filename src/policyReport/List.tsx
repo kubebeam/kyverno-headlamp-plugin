@@ -20,12 +20,12 @@ export default function KyvernoPolicyReportList() {
 }
 
 function PolicyReportListView() {
-  const [resource] = policyReportClass.useList();
+  const [policyReports] = policyReportClass.useList();
 
   return (
     <SectionBox title="Policy Reports">
       <Table
-        data={resource}
+        data={policyReports}
         columns={[
           {
             header: 'Name',
@@ -39,6 +39,7 @@ function PolicyReportListView() {
                     type: 'policyreports',
                   }}
                 >
+                  curl
                   {item.jsonData.scope.name}
                 </Link>
               );

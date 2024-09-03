@@ -1,14 +1,9 @@
-import { K8s } from '@kinvolk/headlamp-plugin/lib';
-import {
-  MainInfoSection,
-  SectionBox,
-  Table,
-} from '@kinvolk/headlamp-plugin/lib/components/common';
+import { MainInfoSection, SectionBox, Table } from '@kinvolk/headlamp-plugin/lib/components/common';
 import React from 'react';
 import { useLocation } from 'react-router';
-import { className } from './List'
+import { policyReportClass } from '../model';
 
-export default function KyvernoPolicyReportDetails(props) {
+export default function KyvernoPolicyReportDetails() {
   const location = useLocation();
   const segments = location.pathname.split('/');
   // The fourth last segment is the kind
@@ -17,54 +12,46 @@ export default function KyvernoPolicyReportDetails(props) {
   const type = segments[segments.length - 2];
   // The last segment is the name
   const name = segments[segments.length - 1];
-  const [resource] = K8s.ResourceClasses.CustomResourceDefinition.useGet(className);
 
-  return (
-    resource && <PolicyReportDetailView name={name} namespace={namespace} resource={resource} />
-  );
+  return <PolicyReportDetailView name={name} namespace={namespace} />;
 }
 
-function prepareExtraInfo(cr) {
+function prepareExtraInfo(policyReport) {
   const extraInfo = [];
 
   extraInfo.push({
     name: 'Scope',
-    value: cr?.jsonData.scope.name,
+    value: policyReport?.jsonData.scope.name,
   });
   return extraInfo;
 }
 
 function PolicyReportDetailView(props) {
-  const { name, namespace, resource } = props;
-  const [cr, setCr] = React.useState(null);
-  const resourceClass = React.useMemo(() => {
-    return resource.makeCRClass();
-  }, [resource]);
+  const { name, namespace } = props;
+  const [policyReport, setPolicyReport] = React.useState(null);
 
-  resourceClass.useApiGet(setCr, name, namespace);
+  policyReportClass.useApiGet(setPolicyReport, name, namespace);
 
   return (
     <>
       <MainInfoSection
         title="Policy Report"
-        resource={cr}
-        extraInfo={prepareExtraInfo(cr)}
-        actions={[
-        ]}
+        resource={policyReport}
+        extraInfo={prepareExtraInfo(policyReport)}
+        actions={[]}
       />
-      {cr && <Results cr={cr} />}
-
+      {policyReport && <Results cr={policyReport} />}
     </>
   );
 }
 
 function Results(props) {
-  const { cr } = props;
-  const results = cr?.jsonData.results
+  const { policyReport } = props;
+  const results = policyReport?.jsonData.results;
 
   return (
     <SectionBox title="Results">
-       <Table
+      <Table
         data={results}
         columns={[
           {

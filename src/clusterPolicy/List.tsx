@@ -12,12 +12,12 @@ export default function KyvernoClusterPolicyList() {
 }
 
 function ClusterPolicyListView() {
-  const [resource] = clusterPolicyClass.useList();
+  const [clusterPolicies] = clusterPolicyClass.useList();
 
   return (
     <SectionBox title="Cluster Policies">
       <Table
-        data={resource}
+        data={clusterPolicies}
         columns={[
           {
             header: 'Name',
