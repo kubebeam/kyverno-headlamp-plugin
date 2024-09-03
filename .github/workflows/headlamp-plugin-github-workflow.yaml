@@ -1,0 +1,49 @@
+name: kyverno-headlamp-plugin linting, type checking, testing, and pre-release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./
+
+    strategy:
+      matrix:
+        node-version: [21.x]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+      - run: npx @kinvolk/headlamp-plugin lint .
+      - run: npx @kinvolk/headlamp-plugin format --check .
+      - run: npx @kinvolk/headlamp-plugin tsc .
+      - run: npx @kinvolk/headlamp-plugin test .
+      - run: npx @kinvolk/headlamp-plugin build .
+
+      - name: Create release info file
+        run: |
+          echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" \
+          > dist/info.txt
+      - name: Update latest release
+        uses: pyTooling/Actions/releaser@r0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          rm: true
+          tag: latest
+          files: |
+            dist/info.txt 
+            dist/main.js
+            package.json
