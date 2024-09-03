@@ -1,36 +1,26 @@
-import { K8s } from '@kinvolk/headlamp-plugin/lib';
-import { DateLabel, LightTooltip, Link, SectionBox, Table } from '@kinvolk/headlamp-plugin/lib/components/common';
+import {
+  DateLabel,
+  LightTooltip,
+  Link,
+  SectionBox,
+  Table,
+} from '@kinvolk/headlamp-plugin/lib/components/common';
 import { StatusLabel, StatusLabelProps } from '@kinvolk/headlamp-plugin/lib/components/common';
-import { KubeObject } from '@kinvolk/headlamp-plugin/lib/lib/k8s/cluster';
 import { Box } from '@mui/material';
-import React from 'react';
+import { policyReportClass } from '../model';
 
-export const className = 'policyreports.wgpolicyk8s.io'
+export const className = 'policyreports.wgpolicyk8s.io';
 
 export default function KyvernoPolicyReportList() {
-
-  const [policyReportCRD] = K8s.ResourceClasses.CustomResourceDefinition.useGet(className);
-
-  const policyReportResourceClass = React.useMemo(() => {
-    return policyReportCRD?.makeCRClass();
-  }, [policyReportCRD]);
-
   return (
     <div>
-      {policyReportResourceClass && (
-        <PolicyReportListView
-          resourceClass={policyReportResourceClass}
-        />
-      )}
+      <PolicyReportListView />
     </div>
   );
 }
 
-function PolicyReportListView(props: {
-  resourceClass: KubeObject;
-}) {
-  const resourceClass = props.resourceClass;
-  const [resource] = resourceClass.useList();
+function PolicyReportListView() {
+  const [resource] = policyReportClass.useList();
 
   return (
     <SectionBox title="Policy Reports">
@@ -46,7 +36,7 @@ function PolicyReportListView(props: {
                   params={{
                     name: item.metadata.name,
                     namespace: item.metadata.namespace,
-                    type: "policyreports",
+                    type: 'policyreports',
                   }}
                 >
                   {item.jsonData.scope.name}
@@ -110,9 +100,9 @@ function PolicyReportListView(props: {
 }
 
 function makeStatusLabel(item) {
-  const tooltip = item.jsonData.results.map((r) => `- ${r.message}`).join('\n\n');
+  const tooltip = item.jsonData.results.map(r => `- ${r.message}`).join('\n\n');
   let status: StatusLabelProps['status'] = '';
-  const fail: number = item.jsonData.summary.fail
+  const fail: number = item.jsonData.summary.fail;
 
   if (fail > 0) {
     status = 'error';
@@ -125,15 +115,14 @@ function makeStatusLabel(item) {
       <Box display="inline">
         <StatusLabel status={status}>
           {fail}
-          {(status === 'error') && (
+          {status === 'error' && (
             <Box
               aria-label="hidden"
               display="inline"
               paddingTop={1}
               paddingLeft={0.5}
               style={{ verticalAlign: 'text-top' }}
-            >
-            </Box>
+            ></Box>
           )}
         </StatusLabel>
       </Box>
