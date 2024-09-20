@@ -19,11 +19,20 @@ export namespace PolicyReport {
     Warn = 'warn',
   }
 
+  export enum Severity {
+    Critical = 'critical',
+    High = 'high',
+    Low = 'low',
+    Medium = 'medium',
+    Info = 'info',
+  }
+
   export interface Result {
     policy: string;
+    category: string;
     rule: ResultStatus;
     result: string;
-    severity: string;
+    severity: Severity;
     message: string;
   }
 

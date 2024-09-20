@@ -5,10 +5,9 @@ import {
 } from '@kinvolk/headlamp-plugin/lib/components/common';
 import { KubeObject } from '@kinvolk/headlamp-plugin/lib/lib/k8s/cluster';
 import { useState } from 'react';
-import { clusterPolicyClass, policyReportClass } from '../model';
 import { ClusterPolicy } from '../kyverno-types/ClusterPolicy';
-import YAML from 'yaml';
 import { PolicyReport } from '../kyverno-types/PolicyReport';
+import { clusterPolicyClass, policyReportClass } from '../model';
 
 export default function KyvernoClusterPolicyList() {
   const [clusterPolicies, setClusterPolicies] = useState<KubeObject[]>(null);
@@ -86,7 +85,7 @@ function makeResultsLabel(policyReports: PolicyReport[], clusterpolicy: ClusterP
     for (const result of report.results) {
       if (
         result.policy === clusterpolicy.metadata.name &&
-        result.result == PolicyReport.ResultStatus.Fail
+        result.result === PolicyReport.ResultStatus.Fail
       ) {
         failCount++;
       }

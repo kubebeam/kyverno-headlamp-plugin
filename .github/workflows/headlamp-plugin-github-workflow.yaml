@@ -9,6 +9,9 @@ on:
 permissions:
   contents: write
 
+env:
+  PLUGIN_NAME: kyverno-plugin
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -27,23 +30,24 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
+      - run: npm ci
       - run: npx @kinvolk/headlamp-plugin lint .
       - run: npx @kinvolk/headlamp-plugin format --check .
       - run: npx @kinvolk/headlamp-plugin tsc .
       - run: npx @kinvolk/headlamp-plugin test .
       - run: npx @kinvolk/headlamp-plugin build .
 
-      - name: Create release info file
+      - name: create-archive
         run: |
-          echo -e "ref: $GITHUB_REF \ncommit: $GITHUB_SHA\nbuild: $(date +"%Y-%m-%dT%H:%M:%SZ")" \
-          > dist/info.txt
-      - name: Update latest release
-        uses: pyTooling/Actions/releaser@r0
+          mkdir -p ${PLUGIN_NAME}
+          cp dist/main.js package.json ${PLUGIN_NAME}
+          tar -czf ${{ github.event.repository.name }}-latest.tar.gz ${PLUGIN_NAME}
+
+      - name: Create Latest Release
+        uses: softprops/action-gh-release@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          rm: true
-          tag: latest
+          token: ${{ github.token }}
+          tag_name: latest
+          prerelease: true
           files: |
-            dist/info.txt 
-            dist/main.js
-            package.json
+            ${{ github.event.repository.name }}-latest.tar.gz
