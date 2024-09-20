@@ -33,7 +33,7 @@ jobs:
         with:
           valueFile: package.json
           propertyPath: version
-          value: '${releaseName}'
+          value: '${{ env.releaseName }}'
           commitChange: false
 
       - name: Use Node.js ${{ matrix.node-version }}
