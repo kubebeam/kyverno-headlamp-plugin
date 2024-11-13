@@ -20,8 +20,8 @@ import { PolicyReportResults } from '../types/policyreport/PolicyReportResults';
 import { NamespaceView } from './NamespaceView';
 
 export default function KyvernoPolicyReportList() {
-  const [policyReportObjects, setPolicyReports] = useState<KubeObject>(null);
-  const [clusterPolicyReportObjects, setClusterPolicyReports] = useState(null);
+  const [policyReportObjects, setPolicyReports] = useState<KubeObject[] | null>(null);
+  const [clusterPolicyReportObjects, setClusterPolicyReports] = useState<KubeObject[] | null>(null);
 
   policyReportClass.useApiList(setPolicyReports);
   clusterpolicyreportClass.useApiList(setClusterPolicyReports);
@@ -42,10 +42,10 @@ export default function KyvernoPolicyReportList() {
             label: 'Rules',
             component: <ResultsView policyReports={policyReports} />,
           },
-          {
-            label: 'Resources',
-            component: <div />,
-          },
+          // {
+          //   label: 'Resources',
+          //   component: <div />,
+          // },
           {
             label: 'Namespaces',
             component: <NamespaceView policyReports={policyReports} />,
