@@ -6,9 +6,9 @@ import {
   SectionBox,
   Table,
 } from '@kinvolk/headlamp-plugin/lib/CommonComponents';
-import { PolicyReport } from '../kyverno-types/PolicyReport';
+import { PolicyReport } from '../types/policyreport/PolicyReport';
 
-export default function NamespaceView(props: { policyReports: PolicyReport[] }) {
+export function NamespaceView(props: { policyReports: PolicyReport[] }) {
   const { policyReports } = props;
 
   const namespaces = new Set();
@@ -39,8 +39,8 @@ export default function NamespaceView(props: { policyReports: PolicyReport[] }) 
               return (
                 <progress
                   value={
-                    getCount(policyReports, namespace, PolicyReport.ResultStatus.Pass) /
-                    getCount(policyReports, namespace)
+                    getCount(policyReports, namespace, 'pass') /
+                    getCount(policyReports, namespace, undefined)
                   }
                 />
               );
@@ -48,14 +48,12 @@ export default function NamespaceView(props: { policyReports: PolicyReport[] }) 
           },
           {
             header: 'Failed',
-            accessorFn: (namespace: string) =>
-              String(getCount(policyReports, namespace, PolicyReport.ResultStatus.Fail)),
+            accessorFn: (namespace: string) => String(getCount(policyReports, namespace, 'fail')),
             gridTemplate: 'min-content',
           },
           {
             header: 'Passed',
-            accessorFn: (namespace: string) =>
-              String(getCount(policyReports, namespace, PolicyReport.ResultStatus.Pass)),
+            accessorFn: (namespace: string) => String(getCount(policyReports, namespace, 'pass')),
             gridTemplate: 'min-content',
           },
         ]}
@@ -67,13 +65,10 @@ export default function NamespaceView(props: { policyReports: PolicyReport[] }) 
 function getCount(
   policyReports: PolicyReport[],
   namespace: string,
-  status?: PolicyReport.ResultStatus
+  status: string | undefined
 ): number {
-  let count = 0;
-  const namespaceReports = policyReports.filter(report => report.metadata.namespace === namespace);
-  namespaceReports.map(
-    report =>
-      (count += report.results.filter(r => status === undefined || r.result == status).length)
-  );
-  return count;
+  return policyReports
+    .filter(report => report.metadata.namespace === namespace)
+    .flatMap(report => report.results?.filter(r => status === undefined || r.result === status))
+    .length;
 }

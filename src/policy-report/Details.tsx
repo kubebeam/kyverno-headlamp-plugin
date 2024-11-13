@@ -1,14 +1,17 @@
 import { NameValueTable, SectionBox, Table } from '@kinvolk/headlamp-plugin/lib/CommonComponents';
 import React from 'react';
-import { PolicyReport } from '../kyverno-types/PolicyReport';
-import { policyReportClass } from '../model';
+import { clusterpolicyreportClass, policyReportClass } from '../model';
+import { PolicyReport } from '../types/policyreport/PolicyReport';
+import { PolicyReportResults } from '../types/policyreport/PolicyReportResults';
 import { getURLSegments } from '../utils/url';
+import { KubeObject } from '@kinvolk/headlamp-plugin/lib/lib/k8s/cluster';
 
 export default function KyvernoPolicyReportDetails() {
   const [name, namespace] = getURLSegments(-1, -2);
-  const [policyReportObject, setPolicyReport] = React.useState(null);
+  const [policyReportObject, setPolicyReport] = React.useState<KubeObject | null>(null);
 
-  policyReportClass.useApiGet(setPolicyReport, name, namespace);
+  if (namespace === '-') clusterpolicyreportClass.useApiGet(setPolicyReport, name);
+  else policyReportClass.useApiGet(setPolicyReport, name, namespace);
 
   if (!policyReportObject) {
     return <div></div>;
@@ -22,15 +25,15 @@ export default function KyvernoPolicyReportDetails() {
           rows={[
             {
               name: 'Workload',
-              value: policyReport.scope.name,
+              value: policyReport.scope?.name,
             },
             {
               name: 'Kind',
-              value: policyReport.scope.kind,
+              value: policyReport.scope?.kind,
             },
             {
               name: 'Namespace',
-              value: policyReport.scope.namespace,
+              value: policyReport.scope?.namespace,
             },
           ]}
         />
@@ -42,7 +45,7 @@ export default function KyvernoPolicyReportDetails() {
 
 function Results(props: { policyReport: PolicyReport }) {
   const { policyReport } = props;
-  const results = policyReport.results;
+  const results = policyReport.results ?? [];
 
   return (
     <SectionBox title="Results">
@@ -51,27 +54,27 @@ function Results(props: { policyReport: PolicyReport }) {
         columns={[
           {
             header: 'Policy',
-            accessorFn: (report: PolicyReport.Result) => report.policy,
+            accessorFn: (report: PolicyReportResults) => report.policy,
             gridTemplate: '0.5fr',
           },
           {
             header: 'Rule',
-            accessorFn: (report: PolicyReport.Result) => report.rule,
+            accessorFn: (report: PolicyReportResults) => report.rule,
             gridTemplate: '0.5fr',
           },
           {
             header: 'Result',
-            accessorFn: (report: PolicyReport.Result) => report.result,
+            accessorFn: (report: PolicyReportResults) => report.result,
             gridTemplate: 'min-content',
           },
           {
             header: 'Severity',
-            accessorFn: (report: PolicyReport.Result) => report.severity,
+            accessorFn: (report: PolicyReportResults) => report.severity,
             gridTemplate: 'min-content',
           },
           {
             header: 'Message',
-            accessorFn: (report: PolicyReport.Result) => report.message.replaceAll('`', '"'),
+            accessorFn: (report: PolicyReportResults) => report.message?.replaceAll('`', '"'),
             gridTemplate: 'auto',
           },
         ]}

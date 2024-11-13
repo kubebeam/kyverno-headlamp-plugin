@@ -13,38 +13,47 @@ import {
 import { KubeObject } from '@kinvolk/headlamp-plugin/lib/lib/k8s/cluster';
 import { Box, FormControlLabel, Switch } from '@mui/material';
 import { useState } from 'react';
-import { PolicyReport } from '../kyverno-types/PolicyReport';
-import { policyReportClass } from '../model';
-import NamespaceView from './NamespaceView';
+import { RoutingPath } from '..';
+import { clusterpolicyreportClass, policyReportClass } from '../model';
+import { PolicyReport } from '../types/policyreport/PolicyReport';
+import { PolicyReportResults } from '../types/policyreport/PolicyReportResults';
+import { NamespaceView } from './NamespaceView';
 
 export default function KyvernoPolicyReportList() {
   const [policyReportObjects, setPolicyReports] = useState<KubeObject>(null);
+  const [clusterPolicyReportObjects, setClusterPolicyReports] = useState(null);
 
   policyReportClass.useApiList(setPolicyReports);
+  clusterpolicyreportClass.useApiList(setClusterPolicyReports);
 
-  if (!policyReportObjects) {
-    return <div></div>;
+  if (!policyReportObjects || !clusterPolicyReportObjects) {
+    return <></>;
   }
 
-  const policyReports = policyReportObjects.map((object: KubeObject) => object.jsonData);
+  const policyReports = [...clusterPolicyReportObjects, ...policyReportObjects].map(
+    (object: KubeObject) => object.jsonData
+  );
   return (
-    <HeadlampTabs
-      tabs={[
-        {
-          label: 'Rules',
-          component: <ResultsView policyReports={policyReports} />,
-        },
-        {
-          label: 'Resources',
-          component: <div />,
-        },
-        {
-          label: 'Namespaces',
-          component: <NamespaceView policyReports={policyReports} />,
-        },
-      ]}
-      ariaLabel="Navigation Tabs"
-    />
+    <>
+      <h1>Compliance</h1>
+      <HeadlampTabs
+        tabs={[
+          {
+            label: 'Rules',
+            component: <ResultsView policyReports={policyReports} />,
+          },
+          {
+            label: 'Resources',
+            component: <div />,
+          },
+          {
+            label: 'Namespaces',
+            component: <NamespaceView policyReports={policyReports} />,
+          },
+        ]}
+        ariaLabel="Navigation Tabs"
+      />
+    </>
   );
 }
 
@@ -54,23 +63,28 @@ function ResultsView(props: { policyReports: PolicyReport[] }) {
 
   class PolicyResult {
     report: PolicyReport;
-    result: PolicyReport.Result;
+    result: PolicyReportResults;
 
-    constructor(report: PolicyReport, result: PolicyReport.Result) {
+    constructor(report: PolicyReport, result: PolicyReportResults) {
       this.report = report;
       this.result = result;
     }
   }
 
-  let results: PolicyResult[] = policyReports.flatMap((p: PolicyReport) =>
-    p.results.map(r => new PolicyResult(p, r))
-  );
+  function getPolicyResults(policyReports: PolicyReport[]): PolicyResult[] {
+    return policyReports.flatMap((p: PolicyReport) =>
+      p.results ? p.results.map(r => new PolicyResult(p, r)) : []
+    );
+  }
+
+  let results = getPolicyResults(policyReports);
+
   if (isFailedRulesSwitchChecked) {
     results = results.filter(r => r.result.result === 'fail');
   }
 
   return (
-    <SectionBox title="Policy Reports">
+    <SectionBox>
       <FormControlLabel
         checked={isFailedRulesSwitchChecked}
         control={<Switch color="primary" />}
@@ -83,56 +97,65 @@ function ResultsView(props: { policyReports: PolicyReport[] }) {
         data={results}
         columns={[
           {
+            header: 'Status',
+            accessorFn: (r: PolicyResult) => r.result.result,
+            Cell: ({ cell }: any) => makeStatusLabel(cell.getValue()),
+            gridTemplate: 'min-content',
+          },
+          {
             header: 'Name',
-            accessorFn: (r: PolicyResult) => {
-              return (
-                <HeadlampLink
-                  routeName={'/kyverno/policyreports/:namespace/:name'}
-                  params={{
-                    name: r.report.metadata.name,
-                    namespace: r.report.metadata.namespace,
-                  }}
-                >
-                  {r.report.scope.name}
-                </HeadlampLink>
-              );
-            },
-            gridTemplate: 'min-content',
-          },
-          {
-            header: 'Kind',
-            accessorFn: (r: PolicyResult) => {
-              return r.report.scope.kind;
-            },
-            gridTemplate: 'min-content',
-          },
-          {
-            header: 'Namespace',
-            accessorFn: (r: PolicyResult) => (
+            accessorFn: (r: PolicyResult) => r.report?.scope?.name,
+            Cell: ({ cell, row }: any) => (
               <HeadlampLink
-                routeName="namespace"
+                routeName={RoutingPath.Report}
                 params={{
-                  name: r.report.metadata.namespace,
+                  name: row.original.report.metadata.name,
+                  namespace: row.original.report.metadata.namespace ?? '-',
                 }}
               >
-                {r.report.metadata.namespace}
+                {cell.getValue()}
               </HeadlampLink>
             ),
             gridTemplate: 'min-content',
           },
           {
+            header: 'Kind',
+            accessorFn: (r: PolicyResult) => {
+              return r.report?.scope?.kind;
+            },
+            gridTemplate: 'min-content',
+          },
+          {
+            header: 'Namespace',
+            accessorFn: (r: PolicyResult) => r.report.metadata.namespace,
+            Cell: ({ cell }: any) => {
+              if (cell.getValue())
+                return (
+                  <HeadlampLink
+                    routeName="namespace"
+                    params={{
+                      name: cell.getValue(),
+                    }}
+                  >
+                    {cell.getValue()}
+                  </HeadlampLink>
+                );
+            },
+            gridTemplate: 'min-content',
+          },
+          {
             header: 'Category',
-            accessorFn: (r: PolicyResult) => r.result.category,
+            accessorKey: 'result.category',
             gridTemplate: 'auto',
           },
           {
             header: 'Policy',
-            accessorFn: (r: PolicyResult) => r.result.policy,
+            accessorKey: 'result.policy',
             gridTemplate: 'auto',
           },
           {
             header: 'Rule',
-            accessorFn: (r: PolicyResult) => r.result.rule,
+            accessorKey: 'result.rule',
             gridTemplate: 'auto',
           },
           {
@@ -142,18 +165,13 @@ function ResultsView(props: { policyReports: PolicyReport[] }) {
           },
           {
             header: 'Message',
-            accessorFn: (r: PolicyResult) => r.result.message.replaceAll('`', '"'),
+            accessorFn: (r: PolicyResult) => r.result?.message?.replaceAll('`', '"'),
             gridTemplate: '2fr',
-          },
-          {
-            header: 'Status',
-            accessorFn: (r: PolicyResult) => makeStatusLabel(r.result),
-            gridTemplate: 'min-content',
           },
           {
             header: 'Age',
             accessorFn: (r: PolicyResult) => (
-              <DateLabel date={r.report.metadata.creationTimestamp} />
+              <DateLabel date={r.report?.metadata?.creationTimestamp ?? ''} />
             ),
             gridTemplate: 'min-content',
           },
@@ -163,10 +181,10 @@ function ResultsView(props: { policyReports: PolicyReport[] }) {
   );
 }
 
-function makeStatusLabel(result: PolicyReport.Result) {
+function makeStatusLabel(result: string) {
   let status: StatusLabelProps['status'] = '';
 
-  if (result.result === 'fail') {
+  if (result === 'fail') {
     status = 'error';
   } else {
     status = 'success';
@@ -175,7 +193,7 @@ function makeStatusLabel(result: PolicyReport.Result) {
   return (
     <Box display="inline">
       <StatusLabel status={status}>
-        {result.result}
+        {result}
         {status === 'error' && (
           <Box
             aria-label="hidden"

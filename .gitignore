@@ -2,3 +2,6 @@ node_modules
 .vscode
 dist
 .eslintcache
+hack/crdtoapi
+hack/crdtoapi-generated
+hack/makeCustomResourceClass.ts
